@@ -1,0 +1,37 @@
+name: package-app
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - "src/**"
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Download packaging toolkit
+        run: wget https://download.splunk.com/misc/packaging-toolkit/splunk-packaging-toolkit-1.0.1.tar.gz
+      - name: Install packaging toolkit
+        run: pip install splunk-packaging-toolkit-1.0.1.tar.gz
+      - name: Package app
+        id: app
+        run: |
+          cd src
+          slim package -o ~/build/packages SA-zTsAutobahn
+          echo "::set-output name=app::realpath ~/build/packages/$(ls ~/build/packages)"
+      - name: Get version
+        id: version
+        run: echo "::set-output name=version::$(cat src/SA-zTsAutobahn/app.manifest | jq -r .info.id.version)"
+      - name: Draft Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          name: SA-zTsAutobahn v${{ steps.version.outputs.version }}
+          tag_name: v${{ steps.version.outputs.version }}
+          files: ${{ steps.app.outputs.app }}
+      
