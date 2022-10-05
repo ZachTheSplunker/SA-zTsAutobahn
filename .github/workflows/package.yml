@@ -23,7 +23,7 @@ jobs:
         run: |
           cd src
           slim package -o ~/build/packages SA-zTsAutobahn
-          echo "::set-output name=app::realpath ~/build/packages/$(ls ~/build/packages)"
+          echo "::set-output name=app::$(realpath ~/build/packages/*)"
       - name: Get version
         id: version
         run: echo "::set-output name=version::$(cat src/SA-zTsAutobahn/app.manifest | jq -r .info.id.version)"
