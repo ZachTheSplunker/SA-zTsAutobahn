@@ -1,0 +1,568 @@
+<dashboard version="2" theme="dark">
+    <label>Autobahn Content Overview</label>
+    <description></description>
+    <definition><![CDATA[
+{
+	"dataSources": {
+		"ds_Cfei8rff": {
+			"type": "ds.search",
+			"options": {
+				"query": "| rest splunk_server=local \"/servicesNS/-/-/saved/searches/\" search=\"is_scheduled=1\" search=\"action.correlationsearch.enabled=1\" search=\"disabled=0\"",
+				"queryParameters": {
+					"earliest": "-1s@s",
+					"latest": "now"
+				}
+			},
+			"name": "base_search"
+		},
+		"ds_FKksP7sa": {
+			"type": "ds.chain",
+			"options": {
+				"extend": "ds_Cfei8rff",
+				"query": "| top 0 action.notable.param.security_domain"
+			},
+			"name": "security_domain_pie_chart"
+		},
+		"ds_9Sda433G": {
+			"type": "ds.chain",
+			"options": {
+				"extend": "ds_FKksP7sa",
+				"query": "| search action.notable.param.security_domain=\"access\"\n| fields + percent"
+			},
+			"name": "security_domain_access_perc"
+		},
+		"ds_pKyBrISv_ds_9Sda433G": {
+			"type": "ds.chain",
+			"options": {
+				"extend": "ds_FKksP7sa",
+				"query": "| search action.notable.param.security_domain=\"audit\"\n| fields + percent"
+			},
+			"name": "security_domain_audit_perc"
+		},
+		"ds_YhFEAkWE_ds_pKyBrISv_ds_9Sda433G": {
+			"type": "ds.chain",
+			"options": {
+				"extend": "ds_FKksP7sa",
+				"query": "| search action.notable.param.security_domain=\"endpoint\"\n| fields + percent"
+			},
+			"name": "security_domain_endpoint_perc"
+		},
+		"ds_0koLgIhZ_ds_YhFEAkWE_ds_pKyBrISv_ds_9Sda433G": {
+			"type": "ds.chain",
+			"options": {
+				"extend": "ds_FKksP7sa",
+				"query": "| search action.notable.param.security_domain=\"identity\"\n| fields + percent"
+			},
+			"name": "security_domain_identity_perc"
+		},
+		"ds_ujs4wM3X_ds_0koLgIhZ_ds_YhFEAkWE_ds_pKyBrISv_ds_9Sda433G": {
+			"type": "ds.chain",
+			"options": {
+				"extend": "ds_FKksP7sa",
+				"query": "| search action.notable.param.security_domain=\"threat\"\n| fields + percent"
+			},
+			"name": "security_domain_threat_perc"
+		},
+		"ds_qQugrQWJ": {
+			"type": "ds.chain",
+			"options": {
+				"extend": "ds_Cfei8rff",
+				"query": "| stats count"
+			},
+			"name": "total_csearches"
+		},
+		"ds_aXqPVBrA": {
+			"type": "ds.search",
+			"options": {
+				"query": "index=notable\n| timechart span=1d count",
+				"queryParameters": {
+					"earliest": "-7d@h",
+					"latest": "now"
+				}
+			},
+			"name": "timechart_notables"
+		},
+		"ds_PG1SONBi": {
+			"type": "ds.chain",
+			"options": {
+				"extend": "ds_Cfei8rff",
+				"query": "| search action.correlationsearch.label=\"*$text_5BCqzinx$*\" OR description=\"*$text_5BCqzinx$*\"\n| fields action.correlationsearch.label, description, cron_schedule, dispatch.earliest_time, dispatch.latest_time, allow_skew, actions, search, updated\n| eval dispatch.earliest_time = if(isnull('dispatch.earliest_time') OR 'dispatch.earliest_time' == \"0\" OR 'dispatch.earliest_time'==\"\", \"not set\", 'dispatch.earliest_time')\n| eval dispatch.latest_time = if(isnull('dispatch.latest_time') OR 'dispatch.latest_time' == \"\", \"not set\",'dispatch.latest_time')\n| eval actions = if(isnull(actions) OR actions == \"\", \"none\", actions)\n| rename action.correlationsearch.label as \"Report Name\", cron_schedule as \"Cron Schedule\", dispatch.earliest_time as \"Earliest Time\", dispatch.latest_time as \"Latest Time\", actions as Actions"
+			},
+			"name": "table"
+		}
+	},
+	"visualizations": {
+		"viz_UxjhzAn9": {
+			"type": "splunk.table",
+			"options": {
+				"count": 100,
+				"dataOverlayMode": "none",
+				"drilldown": "none",
+				"showRowNumbers": false,
+				"showInternalFields": false
+			},
+			"dataSources": {
+				"primary": "ds_PG1SONBi"
+			},
+			"eventHandlers": [
+				{
+					"type": "drilldown.linkToSearch",
+					"options": {
+						"query": "$row.search.value$",
+						"earliest": "-24h@h",
+						"latest": "now",
+						"type": "custom",
+						"newTab": true
+					}
+				}
+			]
+		},
+		"viz_vZNwM7Mo": {
+			"type": "splunk.pie",
+			"options": {
+				"backgroundColor": "transparent",
+				"showDonutHole": true,
+				"seriesColorsByField": {
+					"access": "#7B56DB",
+					"audit": "#009CEB",
+					"endpoint": "#00CDAF",
+					"identity": "#DD9900",
+					"threat": "#FF677B"
+				},
+				"labelDisplay": "off"
+			},
+			"dataSources": {
+				"primary": "ds_FKksP7sa"
+			}
+		},
+		"viz_N8YtPCQ4": {
+			"type": "splunk.markdown",
+			"options": {
+				"markdown": "## Access\n## Audit\n## Endpoint\n## Identity\n## Threat"
+			}
+		},
+		"viz_cna4Xxll": {
+			"type": "splunk.rectangle",
+			"options": {
+				"fillColor": "#7b55db",
+				"strokeColor": "#7b55db"
+			}
+		},
+		"viz_uuTtmdsK": {
+			"type": "splunk.rectangle",
+			"options": {
+				"fillColor": "#019ceb",
+				"strokeColor": "#019ceb"
+			}
+		},
+		"viz_U34U8tUw": {
+			"type": "splunk.rectangle",
+			"options": {
+				"fillColor": "#04cdaf",
+				"strokeColor": "#04cdaf"
+			}
+		},
+		"viz_KQoTX7Xy": {
+			"type": "splunk.rectangle",
+			"options": {
+				"fillColor": "#dc9900",
+				"strokeColor": "#dc9900"
+			}
+		},
+		"viz_PwfGLy8d": {
+			"type": "splunk.rectangle",
+			"options": {
+				"fillColor": "#ff677b",
+				"strokeColor": "#ff677b"
+			}
+		},
+		"viz_YmoUvJo5": {
+			"type": "splunk.singlevalue",
+			"dataSources": {
+				"primary": "ds_9Sda433G"
+			},
+			"options": {
+				"unit": "%",
+				"backgroundColor": "transparent"
+			}
+		},
+		"viz_F5zWi7gD": {
+			"type": "splunk.singlevalue",
+			"dataSources": {
+				"primary": "ds_pKyBrISv_ds_9Sda433G"
+			},
+			"options": {
+				"unit": "%",
+				"backgroundColor": "transparent"
+			}
+		},
+		"viz_aB59EoZD": {
+			"type": "splunk.singlevalue",
+			"dataSources": {
+				"primary": "ds_YhFEAkWE_ds_pKyBrISv_ds_9Sda433G"
+			},
+			"options": {
+				"unit": "%",
+				"backgroundColor": "transparent"
+			}
+		},
+		"viz_9hiDx1xM": {
+			"type": "splunk.singlevalue",
+			"dataSources": {
+				"primary": "ds_0koLgIhZ_ds_YhFEAkWE_ds_pKyBrISv_ds_9Sda433G"
+			},
+			"options": {
+				"unit": "%",
+				"backgroundColor": "transparent"
+			}
+		},
+		"viz_kumtBT9J": {
+			"type": "splunk.singlevalue",
+			"dataSources": {
+				"primary": "ds_ujs4wM3X_ds_0koLgIhZ_ds_YhFEAkWE_ds_pKyBrISv_ds_9Sda433G"
+			},
+			"options": {
+				"unit": "%",
+				"backgroundColor": "transparent"
+			}
+		},
+		"viz_sNwtzX4l": {
+			"type": "splunk.markdown",
+			"options": {
+				"markdown": "# Correlation Searches by Security Domain"
+			}
+		},
+		"viz_tFHZ7x5J": {
+			"type": "splunk.rectangle",
+			"options": {
+				"fillColor": "#15161b",
+				"strokeColor": "#15161b"
+			}
+		},
+		"viz_RMZXmgjg": {
+			"type": "splunk.image",
+			"options": {
+				"preserveAspectRatio": true,
+				"src": "splunk-enterprise-kvstore://65d25afd1239668a780ff945"
+			}
+		},
+		"viz_leOQe7Dr": {
+			"type": "splunk.singlevalue",
+			"options": {
+				"backgroundColor": "transparent"
+			},
+			"dataSources": {
+				"primary": "ds_qQugrQWJ"
+			}
+		},
+		"viz_0JP0VcNW": {
+			"type": "splunk.rectangle",
+			"options": {
+				"fillColor": "#15161b",
+				"strokeColor": "#15161b"
+			}
+		},
+		"viz_jXjJXTFa": {
+			"type": "splunk.markdown",
+			"options": {
+				"markdown": "# Enabled Correlation Searches"
+			}
+		},
+		"viz_Edfo59dm": {
+			"type": "splunk.singlevalue",
+			"dataSources": {
+				"primary": "ds_aXqPVBrA"
+			},
+			"options": {
+				"backgroundColor": "transparent"
+			}
+		},
+		"viz_1Tkyf6j9": {
+			"type": "splunk.rectangle",
+			"options": {
+				"fillColor": "#15161b",
+				"strokeColor": "#15161b"
+			}
+		},
+		"viz_JklPaHZ0": {
+			"type": "splunk.markdown",
+			"options": {
+				"markdown": "# Notables over time (last 7 days)"
+			}
+		}
+	},
+	"inputs": {
+		"input_global_trp": {
+			"type": "input.timerange",
+			"options": {
+				"token": "global_time",
+				"defaultValue": "-24h@h,now"
+			},
+			"title": "Global Time Range"
+		},
+		"input_FEzUipKU": {
+			"options": {
+				"defaultValue": "*",
+				"token": "text_5BCqzinx"
+			},
+			"title": "Search enabled content",
+			"type": "input.text"
+		}
+	},
+	"layout": {
+		"type": "absolute",
+		"options": {
+			"width": 1440,
+			"height": 960,
+			"display": "auto"
+		},
+		"structure": [
+			{
+				"item": "viz_1Tkyf6j9",
+				"type": "block",
+				"position": {
+					"x": 990,
+					"y": 10,
+					"w": 480,
+					"h": 290
+				}
+			},
+			{
+				"item": "viz_0JP0VcNW",
+				"type": "block",
+				"position": {
+					"x": 500,
+					"y": 10,
+					"w": 480,
+					"h": 290
+				}
+			},
+			{
+				"item": "viz_tFHZ7x5J",
+				"type": "block",
+				"position": {
+					"x": 10,
+					"y": 10,
+					"w": 480,
+					"h": 290
+				}
+			},
+			{
+				"item": "viz_UxjhzAn9",
+				"type": "block",
+				"position": {
+					"x": 0,
+					"y": 320,
+					"w": 1440,
+					"h": 640
+				}
+			},
+			{
+				"item": "viz_N8YtPCQ4",
+				"type": "block",
+				"position": {
+					"x": 320,
+					"y": 70,
+					"w": 120,
+					"h": 210
+				}
+			},
+			{
+				"item": "viz_cna4Xxll",
+				"type": "block",
+				"position": {
+					"x": 310,
+					"y": 70,
+					"w": 10,
+					"h": 30
+				}
+			},
+			{
+				"item": "viz_uuTtmdsK",
+				"type": "block",
+				"position": {
+					"x": 310,
+					"y": 112,
+					"w": 10,
+					"h": 30
+				}
+			},
+			{
+				"item": "viz_U34U8tUw",
+				"type": "block",
+				"position": {
+					"x": 310,
+					"y": 156,
+					"w": 10,
+					"h": 30
+				}
+			},
+			{
+				"item": "viz_KQoTX7Xy",
+				"type": "block",
+				"position": {
+					"x": 310,
+					"y": 198,
+					"w": 10,
+					"h": 30
+				}
+			},
+			{
+				"item": "viz_PwfGLy8d",
+				"type": "block",
+				"position": {
+					"x": 310,
+					"y": 240,
+					"w": 10,
+					"h": 30
+				}
+			},
+			{
+				"item": "viz_YmoUvJo5",
+				"type": "block",
+				"position": {
+					"x": 400,
+					"y": 66,
+					"w": 80,
+					"h": 40
+				}
+			},
+			{
+				"item": "viz_F5zWi7gD",
+				"type": "block",
+				"position": {
+					"x": 400,
+					"y": 110,
+					"w": 80,
+					"h": 40
+				}
+			},
+			{
+				"item": "viz_aB59EoZD",
+				"type": "block",
+				"position": {
+					"x": 400,
+					"y": 150,
+					"w": 80,
+					"h": 40
+				}
+			},
+			{
+				"item": "viz_9hiDx1xM",
+				"type": "block",
+				"position": {
+					"x": 400,
+					"y": 196,
+					"w": 80,
+					"h": 40
+				}
+			},
+			{
+				"item": "viz_kumtBT9J",
+				"type": "block",
+				"position": {
+					"x": 400,
+					"y": 237,
+					"w": 80,
+					"h": 40
+				}
+			},
+			{
+				"item": "viz_sNwtzX4l",
+				"type": "block",
+				"position": {
+					"x": 20,
+					"y": 20,
+					"w": 470,
+					"h": 30
+				}
+			},
+			{
+				"item": "viz_RMZXmgjg",
+				"type": "block",
+				"position": {
+					"x": 560,
+					"y": 110,
+					"w": 140,
+					"h": 120
+				}
+			},
+			{
+				"item": "viz_leOQe7Dr",
+				"type": "block",
+				"position": {
+					"x": 700,
+					"y": 80,
+					"w": 200,
+					"h": 180
+				}
+			},
+			{
+				"item": "viz_jXjJXTFa",
+				"type": "block",
+				"position": {
+					"x": 510,
+					"y": 20,
+					"w": 340,
+					"h": 40
+				}
+			},
+			{
+				"item": "viz_Edfo59dm",
+				"type": "block",
+				"position": {
+					"x": 1000,
+					"y": 50,
+					"w": 410,
+					"h": 210
+				}
+			},
+			{
+				"item": "viz_JklPaHZ0",
+				"type": "block",
+				"position": {
+					"x": 1000,
+					"y": 20,
+					"w": 390,
+					"h": 40
+				}
+			},
+			{
+				"item": "viz_vZNwM7Mo",
+				"type": "block",
+				"position": {
+					"x": -20,
+					"y": 50,
+					"w": 370,
+					"h": 240
+				}
+			}
+		],
+		"globalInputs": [
+			"input_global_trp",
+			"input_FEzUipKU"
+		]
+	},
+	"title": "Autobahn Content Overview",
+	"defaults": {
+		"dataSources": {
+			"ds.search": {
+				"options": {
+					"queryParameters": {
+						"latest": "$global_time.latest$",
+						"earliest": "$global_time.earliest$"
+					}
+				}
+			}
+		}
+	}
+}
+    ]]></definition>
+    <meta type="hiddenElements"><![CDATA[
+{
+	"hideEdit": false,
+	"hideOpenInSearch": false,
+	"hideExport": false
+}
+    ]]></meta>
+</dashboard>
